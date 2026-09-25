@@ -11,7 +11,7 @@
 
             account.MakeWithdrawal(200, DateTime.UtcNow, ":)");
             Console.WriteLine(account1.Balance);
-            account1.MakeWithdrawal(200, DateTime.UtcNow, ":)");
+            account1.MakeWithdrawal(200, DateTime.UtcNow, ":)))");
             Console.WriteLine(account1.Balance);
             Console.WriteLine(account1.GetAccountHistory());
 
