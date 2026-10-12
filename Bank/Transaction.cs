@@ -4,10 +4,13 @@ using System.Text;
 
 namespace Bank
 {
-    // You can't change the state of the class
-
-    internal record Transaction(decimal Amount, DateTime Date, string Note); 
-
+    /// <summary>
+    /// Запись о банковской операции. Состояние неизменяемо.
+    /// </summary>
+    /// <param name="Amount">Сумма операции. Положительная — пополнение, отрицательная — списание.</param>
+    /// <param name="Date">Дата и время операции.</param>
+    /// <param name="Note">Текстовый комментарий к операции.</param>
+    public record Transaction(decimal Amount, DateTime Date, string Note);
     //internal record Transaction
     //{
     //    public decimal Amount { get; }
@@ -21,5 +24,4 @@ namespace Bank
     //        this.Note = Note;
     //    }
     //}
-    
 }

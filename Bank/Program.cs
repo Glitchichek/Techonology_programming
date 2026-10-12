@@ -4,8 +4,8 @@
     {
         static void Main(string[] args)
         {
-            BankAccount account = new BankAccount("Ivan", 35000);
-            BankAccount account1 = new BankAccount("B0ba", 35500);
+            BankAccount account = new BankAccount("Иван", 35000);
+            BankAccount account1 = new BankAccount("Вова", 35500);
             Console.WriteLine(account.Owner + " " +  account.Balance + " " + account.Number);
             Console.WriteLine(account1.Owner + " " +  account1.Balance + " " + account1.Number);
 
