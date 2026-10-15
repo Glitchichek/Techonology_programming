@@ -1,6 +1,13 @@
 ﻿namespace Bank;
 
 // record - Состояние объектов этого класса нельзя изменить
+
+/// <summary>
+/// Запись о банковской операции. Состояние неизменяемо.
+/// </summary>
+/// <param name="Amount">Сумма операции. Положительная — пополнение, отрицательная — списание.</param>
+/// <param name="Date">Дата и время операции.</param>
+/// <param name="Note">Текстовый комментарий к операции.</param>
 public record Transaction(decimal Amount, DateTime Date, string Note);
 
 //internal record Transaction
