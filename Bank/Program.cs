@@ -43,13 +43,33 @@
 
             foreach (BankAccount account in accounts)
             {
-                Console.WriteLine(account);    //  == Console.WriteLine(account.ToString());
-                account.PerformMonthAndTransactions();
+                Console.WriteLine(account);
                 Console.WriteLine(account.GetAccountHistory());
             }
 
             lineOfCredit.MakeWithdrawal(600m, DateTime.UtcNow, "credit");
             Console.WriteLine(lineOfCredit.GetAccountHistory());
+
+            BankAccount regular = new BankAccount("Регуляр", 1000);
+            regular.Status = AccountStatus.Regular;
+
+            BankAccount premium = new BankAccount("Премиум", 20000);
+            premium.Status = AccountStatus.Premium;
+
+            BankAccount vip = new BankAccount("Вип", 50000);
+            vip.Status = AccountStatus.Vip;
+            vip.MakeWithdrawal(5000, DateTime.UtcNow, "покупка");
+
+            List<BankAccount> statusAccounts = new List<BankAccount> { regular, premium, vip };
+
+            foreach (var acc in statusAccounts)
+            {
+                Console.WriteLine($" {acc.Owner} ({acc.Status}) ");
+                Console.WriteLine($"Before: {acc.Balance}");
+                acc.PerformMonthAndTransactions();
+                Console.WriteLine($"After: {acc.Balance}");
+                Console.WriteLine(acc.GetAccountHistory());
+            }
         }
     }
 }

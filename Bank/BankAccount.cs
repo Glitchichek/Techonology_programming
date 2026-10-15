@@ -139,7 +139,50 @@ public class BankAccount
     /// Выполняет операции, положенные в конце месяца.
     /// Базовая реализация ничего не делает.
     /// </summary>
-    public virtual void PerformMonthAndTransactions() { }
+    /// /// <summary>
+    /// Выполняет ежемесячные операции: списывает комиссию и начисляет бонусы
+    /// в зависимости от <see cref="Status"/>.
+    /// </summary>
+    public virtual void PerformMonthAndTransactions()
+    {
+        switch (Status)
+        {
+            case AccountStatus.Regular:
+                if (Balance >= 50m)
+                    MakeWithdrawal(50m, DateTime.UtcNow, "Monthly fee (Regular)");
+                break;
+
+            case AccountStatus.Premium:
+                if (Balance > 10000m)
+                {
+                    decimal interest = (Balance - 10000m) * 0.01m;
+                    MakeDeposit(interest, DateTime.UtcNow, "Premium interest");
+                }
+                break;
+
+            case AccountStatus.Vip:
+                if (Balance > 10000m)
+                {
+                    decimal interest = (Balance - 10000m) * 0.03m;
+                    MakeDeposit(interest, DateTime.UtcNow, "VIP interest");
+                }
+                decimal cashback = CalculateCashback();
+                if (cashback > 0)
+                    MakeDeposit(cashback, DateTime.UtcNow, "VIP cashback");
+                break;
+        }
+    }
+
+    private decimal CalculateCashback()
+    {
+        decimal totalWithdrawals = 0;
+        foreach (var t in _allTransactions)
+        {
+            if (t.Amount < 0 && t.Note != "VIP cashback")
+                totalWithdrawals += -t.Amount;
+        }
+        return totalWithdrawals * 0.05m;
+    }
 
     /// <summary>Возвращает текстовое описание счёта.</summary>
     /// <returns>Строка с владельцем, номером и фактическим типом счёта.</returns>
