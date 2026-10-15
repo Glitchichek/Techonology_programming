@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace Bank;
 
@@ -14,18 +16,19 @@ public class BankAccount
     /// <summary>Уникальный номер счёта.</summary>
     public string Number { get; } = string.Empty;
 
-    /// <summary>Имя владельца счёта. Устанавливается в конструкторе; извне — только чтение.</summary>
+    /// <summary>Имя владельца счёта.</summary>
     public string Owner { get; private set; } = string.Empty;
 
     /// <summary>
     /// Статус клиента. Определяет ежемесячные начисления и комиссии.
     /// По умолчанию — <see cref="AccountStatus.Regular"/>.
     /// </summary>
+    // ОТЧЁТ (Задача 1): добавлено свойство Status типа AccountStatus.
+    // От статуса зависят ежемесячные комиссии и бонусы.
+    // Значение по умолчанию — Regular.
     public AccountStatus Status { get; set; } = AccountStatus.Regular;
 
-    /// <summary>
-    /// Текущий баланс счёта, рассчитанный как сумма всех транзакций.
-    /// </summary>
+    /// <summary>Текущий баланс счёта, рассчитанный как сумма всех транзакций.</summary>
     public decimal Balance
     {
         get
@@ -38,15 +41,10 @@ public class BankAccount
     }
 
     /// <summary>Создаёт счёт с нулевым минимальным балансом.</summary>
-    /// <param name="name">Имя владельца.</param>
-    /// <param name="initialBalance">Начальный баланс.</param>
     public BankAccount(string name, decimal initialBalance)
         : this(name, initialBalance, 0) { }
 
-    /// <summary>Создаёт счет с заданным минимальным балансом.</summary>
-    /// <param name="name">Имя владельца.</param>
-    /// <param name="initialBalance">Начальный баланс.</param>
-    /// <param name="minimumBalance">Минимально допустимый баланс.</param>
+    /// <summary>Создаёт счёт с заданным минимальным балансом.</summary>
     public BankAccount(string name, decimal initialBalance, decimal minimumBalance)
     {
         Owner = name;
@@ -58,13 +56,7 @@ public class BankAccount
             MakeDeposit(initialBalance, DateTime.UtcNow, "Initial balance");
     }
 
-    /// <summary>Пополняет счет на указанную сумму.</summary>
-    /// <param name="amount">Сумма пополнения. Должна быть положительной.</param>
-    /// <param name="date">Дата операции.</param>
-    /// <param name="note">Комментарий к операции.</param>
-    /// <exception cref="ArgumentOutOfRangeException">
-    /// Бросается, если <paramref name="amount"/> меньше или равен нулю.
-    /// </exception>
+    /// <summary>Пополняет счёт на указанную сумму.</summary>
     public void MakeDeposit(decimal amount, DateTime date, string note)
     {
         if (amount <= 0)
@@ -73,21 +65,12 @@ public class BankAccount
 
         var deposit = new Transaction(amount, date, note);
         _allTransactions.Add(deposit);
+        // ОТЧЁТ (Задача 2): здесь создаётся Transaction для пополнения.
+        // Поэтому сюда добавлен вызов AuditLog.Record с типом Deposit.
+        AuditLog.Record(Number, "Deposit", amount, date);
     }
 
-    /// <summary>
-    /// Снимает средства со счёта. Если после снятия баланс выходит за минимум,
-    /// вызывается <see cref="CheckWithdrawalLimit"/>.
-    /// </summary>
-    /// <param name="amount">Сумма списания. Должна быть положительной.</param>
-    /// <param name="date">Дата операции.</param>
-    /// <param name="note">Комментарий к операции.</param>
-    /// <exception cref="ArgumentOutOfRangeException">
-    /// Бросается, если <paramref name="amount"/> меньше или равен нулю.
-    /// </exception>
-    /// <exception cref="InvalidOperationException">
-    /// Бросается, если снятие превышает допустимый минимум.
-    /// </exception>
+    /// <summary>Снимает средства со счёта.</summary>
     public virtual void MakeWithdrawal(decimal amount, DateTime date, string note)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
@@ -98,19 +81,21 @@ public class BankAccount
 
         _allTransactions.Add(withdrawal);
 
+        // ОТЧЁТ (Задача 2): здесь создаётся Transaction для списания.
+        // Вызов AuditLog.Record с типом Withdrawal.
+        AuditLog.Record(Number, "Withdrawal", amount, date);
+
         if (overdraftTransaction is not null)
+        {
             _allTransactions.Add(overdraftTransaction);
+
+            // ОТЧЁТ (Задача 2): штрафная транзакция за овердрафт —
+            // тоже операция, тоже логируется.
+            AuditLog.Record(Number, "Withdrawal", -overdraftTransaction.Amount, date);
+        }
     }
 
-    /// <summary>
-    /// Проверяет, не вышел ли баланс за минимально допустимый.
-    /// Базовая реализация бросает исключение; наследники могут вернуть штрафную транзакцию.
-    /// </summary>
-    /// <param name="isOverdrawn">Признак выхода за минимальный баланс.</param>
-    /// <returns>Штрафная транзакция или <c>null</c>, если штрафа нет.</returns>
-    /// <exception cref="InvalidOperationException">
-    /// Бросается, если снятие недопустимо.
-    /// </exception>
+    /// <summary>Проверяет, не вышел ли баланс за минимум.</summary>
     protected virtual Transaction? CheckWithdrawalLimit(bool isOverdrawn)
     {
         if (isOverdrawn)
@@ -118,8 +103,7 @@ public class BankAccount
         return default;
     }
 
-    /// <summary>Возвращает историю операций счёта в виде текста.</summary>
-    /// <returns>Многострочная строка с датой, суммой, балансом и комментарием.</returns>
+    /// <summary>Возвращает историю операций счёта.</summary>
     public string GetAccountHistory()
     {
         var report = new StringBuilder();
@@ -136,13 +120,16 @@ public class BankAccount
     }
 
     /// <summary>
-    /// Выполняет операции, положенные в конце месяца.
-    /// Базовая реализация ничего не делает.
+    /// Выполняет ежемесячные операции: списывает комиссию и начисляет
+    /// бонусы в зависимости от <see cref="Status"/>.
     /// </summary>
-    /// /// <summary>
-    /// Выполняет ежемесячные операции: списывает комиссию и начисляет бонусы
-    /// в зависимости от <see cref="Status"/>.
-    /// </summary>
+    // ОТЧЁТ (Задача 1): здесь реализована логика статусов.
+    // Раньше метод был пустой, а теперь внутри switch: Regular списывает 50 руб, Premium начисляет 1% на остаток > 10 000, Vip начисляет 3% на остаток > 10 000 и 5% кэшбэк.
+    //
+    // Наблюдения для отчёта:
+    // Логика процентов (Premium/Vip) похожа на то, что делает InterestEarningAccount, есть дублирование.
+    //
+    // Сколько мест в коде пришлось изменить? — 2 (свойство + метод).
     public virtual void PerformMonthAndTransactions()
     {
         switch (Status)
@@ -173,6 +160,9 @@ public class BankAccount
         }
     }
 
+    // ОТЧЁТ (Задача 1): новый вспомогательный метод для VIP-кэшбэка.
+    // Считает 5% от суммы всех списаний по счёту.
+    // VIP-статус требует кэшбэка, которого раньше не было.
     private decimal CalculateCashback()
     {
         decimal totalWithdrawals = 0;
@@ -185,7 +175,6 @@ public class BankAccount
     }
 
     /// <summary>Возвращает текстовое описание счёта.</summary>
-    /// <returns>Строка с владельцем, номером и фактическим типом счёта.</returns>
     public override string ToString()
         => $"Owner: {Owner}\taccount number: {Number} (тип счета {GetType().Name})";
 }
