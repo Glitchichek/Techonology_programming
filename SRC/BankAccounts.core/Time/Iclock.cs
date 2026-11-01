@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace BankAccounts.Core.Time;
 
-namespace BankAccounts.core.Time
+// Выносим зависимость от времени в интерфейс,
+// чтобы можно было подменить его в тестах (DIP)
+public interface IClock
 {
-    internal class Iclock
-    {
-    }
+    DateTime Now { get; }
 }
